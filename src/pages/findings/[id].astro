@@ -1,0 +1,51 @@
+---
+import { getCollection, getEntry, getEntries } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { fmt } from '../../lib/lib';
+
+export async function getStaticPaths() {
+  const findings = await getCollection('findings');
+  return findings.map((finding) => ({ params: { id: finding.id }, props: { finding } }));
+}
+
+const { finding } = Astro.props;
+// Astro logs a dangling reference as an error but `astro check` and content sync still exit 0
+// (PROOF.md), so the build fails here on purpose rather than by accident.
+const topic = await getEntry(finding.data.topic);
+if (!topic) throw new Error(`Finding "${finding.id}" references a topic that does not exist.`);
+const resolved = await getEntries(finding.data.sources);
+const missing = finding.data.sources.filter((_, i) => !resolved[i]).map((r) => r.id);
+if (missing.length) {
+  throw new Error(`Finding "${finding.id}" cites sources that do not exist: ${missing.join(', ')}`);
+}
+const sources = resolved.filter((s): s is NonNullable<typeof s> => Boolean(s));
+const paper = finding.data.depth3 ? await getEntry(finding.data.depth3) : undefined;
+if (finding.data.depth3 && !paper) {
+  throw new Error(`Finding "${finding.id}" references a paper that does not exist: ${finding.data.depth3.id}`);
+}
+---
+<Base title={finding.data.title}>
+  <article data-pagefind-body>
+    <h1>{finding.data.title}</h1>
+    <p>Topic: <a href={`/topics/#${topic.id}`}>{topic.data.name}</a></p>
+    <p><strong>{finding.data.depth1}</strong>
+      {sources.map((s) => (<> <a href={`#source-${s.id}`}>[{s.data.ref}]</a></>))}
+    </p>
+    <p>{finding.data.depth2}</p>
+    {paper && <p>Paper: <a href={`/papers/${paper.id}/`}>{paper.data.title}</a></p>}
+    {finding.data.status === 'corrected' && <p>This finding has been corrected.</p>}
+    <p>Signed off by {finding.data.signoff.person}, {fmt(finding.data.signoff.date)}.</p>
+
+    <section aria-labelledby="sources-heading">
+      <h2 id="sources-heading">Sources</h2>
+      {sources.map((s) => (
+        <div id={`source-${s.id}`}>
+          <h3>{s.data.ref}</h3>
+          <blockquote>{s.data.quote}</blockquote>
+          <p>Verified: {s.data.verified.by}, {fmt(s.data.verified.date)}</p>
+          <p><a href={s.data.url ?? s.data.file}>{s.data.title}</a></p>
+        </div>
+      ))}
+    </section>
+  </article>
+</Base>

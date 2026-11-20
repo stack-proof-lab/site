@@ -1,0 +1,15 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { fmt } from '../../lib/lib';
+const events = (await getCollection('events')).sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
+---
+<Base title="Events">
+  <h1>Events</h1>
+  {events.length === 0 && <p>No events scheduled.</p>}
+  <ul>
+    {events.map((e) => (
+      <li>{fmt(e.data.date)}: {e.data.title} ({e.data.kind}{e.data.partners ? `, with ${e.data.partners.join(', ')}` : ''})</li>
+    ))}
+  </ul>
+</Base>

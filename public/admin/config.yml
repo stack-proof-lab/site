@@ -1,0 +1,201 @@
+# Sveltia CMS configuration for the stack proof.
+# Every field required by src/content.config.ts is required here (fields are required by default in
+# Sveltia: https://sveltiacms.app/en/docs/fields); optional schema fields carry required: false.
+backend:
+  name: github
+  repo: stack-proof-lab/site
+  branch: main
+  auth_methods: [token] # token sign-in only
+
+publish_mode:
+  type: editorial_workflow
+  direct_publish: false # the documented default, stated so nobody turns it on by accident
+  allow_incomplete_drafts: false # default is true; false stops drafts being saved with required fields empty
+
+media_folder: public/files
+public_folder: /files
+
+output:
+  omit_empty_optional_fields: true
+
+collections:
+  - name: findings
+    label: Findings
+    label_singular: Finding
+    folder: src/content/findings
+    extension: md
+    format: frontmatter
+    create: true
+    identifier_field: title
+    slug: '{{slug}}'
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: topic
+        label: Topic
+        widget: relation
+        collection: topics
+        value_field: '{{slug}}'
+        display_fields: [name]
+        search_fields: [name]
+      - { name: depth1, label: 'Depth one (the fifteen-second sentence)', widget: text }
+      - name: sources
+        label: Sources
+        hint: At least one. Each source must already carry its quote and verified line.
+        widget: relation
+        collection: sources
+        value_field: '{{slug}}'
+        display_fields: [ref]
+        search_fields: [ref, title]
+        multiple: true
+        min: 1
+        required: true
+      - { name: depth2, label: 'Depth two (summary)', widget: text }
+      - name: depth3
+        label: 'Depth three (paper)'
+        widget: relation
+        collection: papers
+        value_field: '{{slug}}'
+        display_fields: [title]
+        search_fields: [title]
+        required: false
+      - name: signoff
+        label: 'Sign-off (depth one)'
+        widget: object
+        fields:
+          - { name: person, label: Approver, widget: string }
+          - { name: date, label: Date, widget: datetime, type: date }
+      - name: status
+        label: Status
+        widget: select
+        options: [published, corrected]
+        default: published
+      - { name: published, label: Published, widget: datetime, type: date }
+      - { name: updated, label: Updated, widget: datetime, type: date, required: false }
+
+  - name: sources
+    label: Sources
+    label_singular: Source
+    folder: src/content/sources
+    extension: md
+    format: frontmatter
+    create: true
+    identifier_field: title
+    slug: '{{slug}}'
+    fields:
+      - name: kind
+        label: Kind
+        widget: select
+        options: [dataset, publication, act or regulation, policy instrument, legal provision]
+      - { name: ref, label: 'Reference (as the rail shows it)', widget: string }
+      - { name: title, label: Title, widget: string }
+      - { name: quote, label: 'Quote (as published, nothing added)', widget: text }
+      - { name: url, label: URL, widget: string, required: false, hint: 'Give a URL or a file, exactly one.' }
+      - { name: file, label: File, widget: file, required: false }
+      - name: verified
+        label: Verified
+        widget: object
+        fields:
+          - { name: by, label: Checked by, widget: string }
+          - { name: date, label: Date, widget: datetime, type: date }
+
+  - name: papers
+    label: Papers
+    label_singular: Paper
+    folder: src/content/papers
+    extension: md
+    format: frontmatter
+    create: true
+    identifier_field: title
+    slug: '{{slug}}'
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: finding
+        label: Finding
+        widget: relation
+        collection: findings
+        value_field: '{{slug}}'
+        display_fields: [title]
+        search_fields: [title]
+        required: false
+      - name: topic
+        label: Topic
+        widget: relation
+        collection: topics
+        value_field: '{{slug}}'
+        display_fields: [name]
+        search_fields: [name]
+        required: false
+      - name: kind
+        label: Kind
+        widget: select
+        options: [working paper, policy brief, research paper, other]
+      - name: versions
+        label: Versions
+        widget: list
+        min: 1
+        fields:
+          - { name: file, label: File, widget: file }
+          - { name: version, label: Version, widget: string }
+          - { name: date, label: Date, widget: datetime, type: date }
+          - { name: note, label: Note, widget: string, required: false }
+      - name: citation
+        label: Citation
+        widget: object
+        fields:
+          - name: authors
+            label: Authors
+            widget: list
+            min: 1
+            field: { name: author, label: Author, widget: string }
+          - { name: year, label: Year, widget: number, value_type: int }
+          - { name: publisher, label: Publisher, widget: string }
+          - { name: url, label: 'DOI or URL', widget: string, required: false }
+
+  - name: topics
+    label: Topics
+    label_singular: Topic
+    folder: src/content/topics
+    extension: md
+    format: frontmatter
+    create: true
+    identifier_field: name
+    slug: '{{slug}}'
+    fields:
+      - { name: name, label: Name, widget: string }
+      - { name: question, label: Question, widget: string }
+      - { name: perspective, label: Perspective, widget: text, required: false }
+      - { name: order, label: Order, widget: number, value_type: int }
+
+  - name: events
+    label: Events
+    label_singular: Event
+    folder: src/content/events
+    extension: md
+    format: frontmatter
+    create: true
+    identifier_field: title
+    slug: '{{slug}}'
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: kind
+        label: Kind
+        widget: select
+        options: [conversation with partners, seminar, workshop, other]
+      - name: partners
+        label: Partners
+        widget: list
+        required: false
+        field: { name: partner, label: Partner, widget: string }
+      - { name: date, label: Date, widget: datetime, type: date }
+      - { name: endDate, label: End date, widget: datetime, type: date, required: false }
+      - { name: place, label: Place, widget: string, required: false }
+      - { name: description, label: Description, widget: text }
+      - { name: link, label: Link, widget: string, required: false }
+      - name: topic
+        label: Topic
+        widget: relation
+        collection: topics
+        value_field: '{{slug}}'
+        display_fields: [name]
+        search_fields: [name]
+        required: false

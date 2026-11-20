@@ -1,0 +1,15 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+const topics = (await getCollection('topics')).sort((a, b) => a.data.order - b.data.order);
+---
+<Base title="Topics">
+  <h1>Topics</h1>
+  {topics.map((t) => (
+    <section id={t.id}>
+      <h2>{t.data.name}</h2>
+      <p>{t.data.question}</p>
+      <p>{t.data.perspective ?? 'Perspective not yet stated.'}</p>
+    </section>
+  ))}
+</Base>

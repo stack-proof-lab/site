@@ -1,0 +1,14 @@
+# Code owners.
+# Findings, sources, statements and corrections need an approver's review; everything else can be
+# published on an editor's own say (@stack-proof-lab/editors, no code-owner entry needed). The file
+# must be on main and the team must have write access (GitHub, About code owners).
+
+/src/content/findings/     @stack-proof-lab/approvers
+/src/content/sources/      @stack-proof-lab/approvers
+/src/content/statements/   @stack-proof-lab/approvers
+/src/content/corrections/  @stack-proof-lab/approvers
+
+# The rules files themselves, so the review requirement cannot be edited away by an editor.
+/.github/                  @stack-proof-lab/approvers
+/src/content.config.ts     @stack-proof-lab/approvers
+/public/admin/config.yml   @stack-proof-lab/approvers

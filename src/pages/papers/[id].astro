@@ -1,0 +1,21 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { fmt } from '../../lib/lib';
+
+export async function getStaticPaths() {
+  const papers = await getCollection('papers');
+  return papers.map((paper) => ({ params: { id: paper.id }, props: { paper } }));
+}
+const { paper } = Astro.props;
+const finding = paper.data.finding ? await getEntry(paper.data.finding) : undefined;
+const current = paper.data.versions[paper.data.versions.length - 1]!;
+---
+<Base title={paper.data.title}>
+  <article data-pagefind-body>
+    <h1>{paper.data.title}</h1>
+    <p>{paper.data.kind}; {paper.data.citation.authors.join(', ')} ({paper.data.citation.year}), {paper.data.citation.publisher}</p>
+    <p>Current version {current.version}, {fmt(current.date)}: <a href={current.file}>download</a></p>
+    {finding && <p>Finding: <a href={`/findings/${finding.id}/`}>{finding.data.title}</a></p>}
+  </article>
+</Base>

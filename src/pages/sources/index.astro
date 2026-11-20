@@ -1,0 +1,14 @@
+---
+// Proof-only index. Content model v2 §2.4 (decision 4): no sources index or record pages at launch;
+// sources render inside each finding page. Kept here because the proof brief asked for an index per
+// collection; drop it in the real build.
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+const sources = (await getCollection('sources')).sort((a, b) => a.id.localeCompare(b.id));
+---
+<Base title="Sources">
+  <h1>Sources (proof only)</h1>
+  <ul>
+    {sources.map((s) => (<li>{s.data.ref} ({s.data.kind})</li>))}
+  </ul>
+</Base>

@@ -1,0 +1,11 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+const papers = (await getCollection('papers')).sort((a, b) => a.id.localeCompare(b.id));
+---
+<Base title="Papers">
+  <h1>Papers</h1>
+  <ul>
+    {papers.map((p) => (<li><a href={`/papers/${p.id}/`}>{p.data.title}</a> ({p.data.kind})</li>))}
+  </ul>
+</Base>

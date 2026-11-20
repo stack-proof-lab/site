@@ -1,0 +1,85 @@
+# Deploy on push to main, or by hand (workflow_dispatch). Never runs on pull requests or cms/*
+# branches, so drafts never reach the server.
+#
+# Transport: rsync over SSH (easingthemes/ssh-deploy). Plain SFTP actions either wipe the whole
+# remote folder or never delete; rsync's --delete with --exclude keeps the form handler's files,
+# because "Files that are excluded from the transfer are also excluded from being deleted"
+# (rsync manual, --delete). Needs SSH and rsync on the hosting account.
+#
+# Safety: the job only runs when the repository variable DEPLOY_ENABLED is set to "true", and every
+# host, user, port and path comes from secrets in the "production" environment (restricted to the
+# main branch in the repository's environment settings). None are configured in this repository, so
+# no real deploy can run. Referenced by name only:
+#   DEPLOY_SSH_KEY, DEPLOY_HOST, DEPLOY_USER, DEPLOY_PORT, DEPLOY_KNOWN_HOSTS,
+#   DEPLOY_PUBLIC_TARGET (the web root), DEPLOY_PRIVATE_TARGET (a folder outside the web root)
+name: deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx astro check
+      - run: npm run build
+
+      # ssh-deploy v6.0.3 empties ~/.ssh/known_hosts and appends an ssh-keyscan result on every run
+      # (src/sshKey.js), so that file pins nothing. SSH is pointed at a separate file holding the key
+      # from a secret instead.
+      - name: Pin the server's host key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts_pinned
+          chmod 600 ~/.ssh/known_hosts_pinned
+        env:
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+
+      # 1. The static site into the web root. Nothing of the handler lives here.
+      - name: Deploy site to the web root
+        uses: easingthemes/ssh-deploy@v6.0.3 # pin to the release's commit SHA before production use
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+          REMOTE_USER: ${{ secrets.DEPLOY_USER }}
+          REMOTE_PORT: ${{ secrets.DEPLOY_PORT }}
+          SOURCE: dist/
+          TARGET: ${{ secrets.DEPLOY_PUBLIC_TARGET }}
+          ARGS: -rlgoDzvc -i --delete
+          # Host-managed paths that must survive --delete (ASSUMPTION: check the account's web root).
+          EXCLUDE: /.well-known/, /cgi-bin/, /.htaccess
+          # Replace the action's default StrictHostKeyChecking=no; only the key pinned above is accepted.
+          SSH_CMD_ARGS: -o StrictHostKeyChecking=yes, -o UserKnownHostsFile=/home/runner/.ssh/known_hosts_pinned
+
+      # 2. The form handler into the private folder.
+      # Excluded paths are neither uploaded nor deleted: the hand-placed config.php, the log and the
+      # rate store stay as they are on the server.
+      - name: Deploy form handler to the private folder
+        uses: easingthemes/ssh-deploy@v6.0.3 # pin to the release's commit SHA before production use
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+          REMOTE_USER: ${{ secrets.DEPLOY_USER }}
+          REMOTE_PORT: ${{ secrets.DEPLOY_PORT }}
+          SOURCE: server/private/
+          TARGET: ${{ secrets.DEPLOY_PRIVATE_TARGET }}
+          ARGS: -rlgoDzvc -i --delete
+          EXCLUDE: /config.php, /log/, /ratelimit/
+          SSH_CMD_ARGS: -o StrictHostKeyChecking=yes, -o UserKnownHostsFile=/home/runner/.ssh/known_hosts_pinned

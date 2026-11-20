@@ -1,0 +1,29 @@
+# Required status check for pull requests.
+# Runs on every pull request, including the CMS's cms/<collection>/<slug> branches.
+# No secrets are referenced and no environment is used, so nothing secret is available to this job.
+name: check
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx astro check
+      # astro build, then the postbuild script runs pagefind --site dist
+      - run: npm run build

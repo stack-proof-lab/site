@@ -1,0 +1,23 @@
+{
+  "name": "stack-proof-site",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "check": "astro check",
+    "build": "astro build",
+    "postbuild": "node scripts/copy-cms.mjs && pagefind --site dist",
+    "preview": "astro preview",
+    "tokens": "node scripts/tokens-from-design.mjs"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "astro": "^7.4.1",
+    "pagefind": "^1.6.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@sveltia/cms": "0.270.0"
+  }
+}
