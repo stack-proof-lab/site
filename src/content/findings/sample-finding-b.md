@@ -2,8 +2,7 @@
 title: Sample finding B
 topic: sample-topic-b
 depth1: Sample finding B states a second placeholder result for the stack proof.
-sources:
-  - sample-source-c
+sources: []
 depth2: Sample summary for finding B. Placeholder text.
 signoff:
   person: Sample Approver
