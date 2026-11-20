@@ -1,7 +1,7 @@
 ---
 title: Sample finding A
 topic: sample-topic-a
-depth1: Sample finding A states a placeholder result about zephyrine output for the stack proof.
+depth1: Sample finding A, edited by the approver to test self-approval.
 sources:
   - sample-source-a
   - sample-source-b
